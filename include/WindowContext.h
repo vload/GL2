@@ -16,7 +16,7 @@ class WindowContext {
         glfwInit();
 
         // Tell GLFW what version of OpenGL we are using
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
@@ -56,4 +56,16 @@ class WindowContext {
     }
 
     int get_key(int key) { return glfwGetKey(window, key); }
+
+    int get_width() {
+        int width, height;
+        glfwGetWindowSize(window, &width, &height);
+        return width;
+    }
+
+    int get_height() {
+        int width, height;
+        glfwGetWindowSize(window, &width, &height);
+        return height;
+    }
 };

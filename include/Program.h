@@ -55,5 +55,10 @@ class Program {
         glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(m));
     }
 
+    void set_uniform(std::string name, int i) {
+        int location = glGetUniformLocation(program, name.c_str());
+        glUniform1i(location, i);
+    }
+
     unsigned int get() { return program; }
 };
