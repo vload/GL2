@@ -26,6 +26,23 @@ class Program {
         }
     }
 
+    Program(Shader vertexShader, Shader fragmentShader, Shader geometryShader) {
+        program = glCreateProgram();
+        glAttachShader(program, vertexShader.get());
+        glAttachShader(program, fragmentShader.get());
+        glAttachShader(program, geometryShader.get());
+        glLinkProgram(program);
+
+        int success;
+        char infoLog[512];
+        glGetProgramiv(program, GL_LINK_STATUS, &success);
+        if (!success) {
+            glGetProgramInfoLog(program, 512, NULL, infoLog);
+            std::cout << "ERROR::SHADER::PROGRAM::LINK_FAILED\n"
+                      << infoLog << std::endl;
+        }
+    }
+
     void use() { glUseProgram(program); }
 
     void set_uniform(std::string name, glm::vec4 v) {
