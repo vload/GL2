@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "Shader.h"
 #include "util.h"
 
@@ -24,7 +26,17 @@ class Program {
         }
     }
 
-    //    ~Program() {  }
+    void use() { glUseProgram(program); }
+
+    void set_uniform(std::string name, glm::vec4 v) {
+        int location = glGetUniformLocation(program, name.c_str());
+        glUniform4f(location, v.x, v.y, v.z, v.w);
+    }
+
+    void set_uniform(std::string name, glm::mat4 m) {
+        int location = glGetUniformLocation(program, name.c_str());
+        glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(m));
+    }
 
     unsigned int get() { return program; }
 };

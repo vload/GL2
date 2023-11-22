@@ -37,7 +37,7 @@ int main() {
     }
 
     // Tell OpenGL the size of the rendering window
-    glViewport(0, 0, 800, 600);
+    glViewport(0, 0, 800, 800);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // Shader compilation
@@ -80,25 +80,45 @@ int main() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
     glEnableVertexAttribArray(0);
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    int frameCount = 0;
 
     while (!glfwWindowShouldClose(window)) {
+        frameCount++;
         processInput(window);
 
         // render
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        // glClear(GL_COLOR_BUFFER_BIT);
 
-        glUseProgram(program.get());
+        float timeValue = glfwGetTime();
+        glm::mat4 trans = glm::mat4(1.0f);
+        trans = glm::rotate(trans, glm::radians(timeValue * 30.0f),
+                            glm::vec3(0.0, 0.0, 1.0));
+        trans = glm::translate(trans, glm::vec3(0.1, 0.1, 0.0));
+        trans = glm::rotate(trans, glm::radians(timeValue * 50.0f),
+                            glm::vec3(0.0, 0.0, 1.0));
+        trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
+
+        float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
+
+        program.use();
+        program.set_uniform(
+            "ourColor", glm::vec4(0.0f, greenValue, 1.0f - greenValue, 1.0f));
+        program.set_uniform("transform", trans);
         glBindVertexArray(VAOs[0]);
         glDrawArrays(GL_TRIANGLES, 0, 3);
-        glUseProgram(blueProgram.get());
+
+        blueProgram.use();
         glBindVertexArray(VAOs[1]);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
         // check and call events and swap the buffers
         glfwSwapBuffers(window);
         glfwPollEvents();
+        if (frameCount % 500 == 0)
+            std::cout << frameCount / timeValue << std::endl;
     }
 
     glfwTerminate();

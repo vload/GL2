@@ -24,7 +24,5 @@ class Shader {
         }
     }
 
-    // ~Shader() { glDeleteShader(shader); }
-
     unsigned int get() { return shader; }
 };

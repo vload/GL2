@@ -6,6 +6,9 @@ set(GLFW ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/glfw-3.3.8)
 # Set the path to the GLAD folder
 set(GLAD ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/glad)
 
+# Set the path to the GLM folder
+set(GLM ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/glm-0.9.9.8)
+
 project(
     GL2
     VERSION 0.1
@@ -17,6 +20,9 @@ link_directories(${GLFW}/lib-vc2022)
 
 # Add the include directory for GLAD
 include_directories(${GLAD}/include)
+
+# Add the include directory for GLM
+include_directories(${GLM})
 
 # Add the include directory
 include_directories(include)
