@@ -5,9 +5,9 @@
 #include "WindowContext.h"
 #include "util.h"
 
-constexpr int num_balls = 100000;
-constexpr float zoom = 10.0f;
-constexpr float ball_size = 0.002f;
+constexpr int num_balls = 1'000'000;
+float zoom = 10.0f;
+float ball_size = 0.002f;
 
 glm::mat4 projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
 
@@ -113,23 +113,35 @@ int main() {
 
     int frameCount = 0;
 
-    // Enable blending
+    // Enable blending and set clear color
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     double old_time = glfwGetTime();
     double delta_time = 0.0f;
 
     while (!window.should_close()) {
-        delta_time = glfwGetTime() - old_time;
-        old_time = glfwGetTime();
-        frameCount++;
+        // imgui new frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        // imgui window
+        // ImGui::ShowDemoWindow();  // Show demo window! :)
+        ImGui::Text("Frame time: %lf", delta_time);
+        ImGui::SliderFloat("ball size", &ball_size, 0.0f, 0.1f,
+                           "ratio = %.3f");
+        ImGui::SliderFloat("world size", &zoom, 1.0f, 100.f, "ratio = %.5f");
 
         // process_input(window);
 
+        //// Step 1: COMPUTE
         computeProgram.use();
         // bind buffers
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, SSBOs[SSBO::input]);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(balls), balls,
+                     GL_DYNAMIC_DRAW);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, SSBOs[SSBO::output]);
 
         // set delta time
@@ -142,33 +154,36 @@ int main() {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOs[SSBO::output]);
         glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(balls), balls);
 
-        // render
-        glClearColor(0.0f, 0.0f, 0.0f, 0.1f);
+        //// Step 2: RENDERING
         glClear(GL_COLOR_BUFFER_BIT);
 
         glm::mat4 trans(1.0f);
         trans = glm::scale(trans, glm::vec3(0.05, 0.05, 0.05));
 
         geometryProgram.use();
+
+        // set uniforms
         geometryProgram.set_uniform("projection", projection);
         geometryProgram.set_uniform(
             "zoom", glm::ortho(-zoom, zoom, -zoom, zoom, -1.0f, 1.0f));
         geometryProgram.set_uniform("size", ball_size);
         glBindVertexArray(VAO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(balls), balls, GL_DYNAMIC_DRAW);
         glDrawArrays(GL_POINTS, 0, num_balls);
+
+        // render imgui
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         // check and call events and swap the buffers
         window.swap_buffers();
         glfwPollEvents();
 
-        glBindVertexArray(VAO);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(balls), balls, GL_DYNAMIC_DRAW);
-
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOs[SSBO::input]);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(balls), balls,
-                     GL_DYNAMIC_DRAW);
-
+        // time calculation and framrate computation
+        delta_time = glfwGetTime() - old_time;
+        old_time = glfwGetTime();
+        frameCount++;
         if (frameCount % 100 == 0) {
             std::cout << frameCount / glfwGetTime() << std::endl;
         }
@@ -176,7 +191,6 @@ int main() {
 
     return 0;
 }
-
 // void process_input(WindowContext& window) {
 //     if (window.get_key(GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 //         window.set_should_close(true);
