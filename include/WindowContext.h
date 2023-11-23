@@ -21,7 +21,7 @@ class WindowContext {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         // Create a GLFW window object
-        window = glfwCreateWindow(1000, 1000, "Hello", NULL, NULL);
+        window = glfwCreateWindow(1000, 1000, "Particles", NULL, NULL);
         if (window == NULL) {
             std::cout << "Failed to create GLFW window" << std::endl;
             glfwTerminate();
@@ -92,5 +92,9 @@ class WindowContext {
         int width, height;
         glfwGetWindowSize(window, &width, &height);
         return height;
+    }
+
+    void get_cursor_pos(double* xpos, double* ypos) {
+        glfwGetCursorPos(window, xpos, ypos);
     }
 };

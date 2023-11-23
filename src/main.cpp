@@ -8,6 +8,7 @@
 constexpr int num_balls = 1'000'000;
 float zoom = 10.0f;
 float ball_size = 0.002f;
+float time_scale = 1.0f;
 
 glm::mat4 projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
 
@@ -111,8 +112,6 @@ int main() {
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(balls), nullptr,
                  GL_DYNAMIC_DRAW);
 
-    int frameCount = 0;
-
     // Enable blending and set clear color
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -130,9 +129,16 @@ int main() {
         // imgui window
         // ImGui::ShowDemoWindow();  // Show demo window! :)
         ImGui::Text("Frame time: %lf", delta_time);
-        ImGui::SliderFloat("ball size", &ball_size, 0.0f, 0.1f,
-                           "ratio = %.3f");
-        ImGui::SliderFloat("world size", &zoom, 1.0f, 100.f, "ratio = %.5f");
+
+        ImGui::SliderFloat("ball size", &ball_size, 0.001f, 0.1f,
+                           "ball size = %.3f");
+        ImGui::SliderFloat("world size", &zoom, 1.0f, 100.f,
+                           "world size = %.1f");
+        ImGui::SliderFloat("time scale", &time_scale, 0.1f, 100.f,
+                           "time scale = %.2f");
+        if (ImGui::Button("Reset")) {
+            generate_balls();
+        }
 
         // process_input(window);
 
@@ -145,7 +151,7 @@ int main() {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, SSBOs[SSBO::output]);
 
         // set delta time
-        computeProgram.set_uniform("delta_t", (float)delta_time);
+        computeProgram.set_uniform("delta_t", (float)delta_time * time_scale);
 
         glDispatchCompute(num_balls, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
@@ -183,16 +189,7 @@ int main() {
         // time calculation and framrate computation
         delta_time = glfwGetTime() - old_time;
         old_time = glfwGetTime();
-        frameCount++;
-        if (frameCount % 100 == 0) {
-            std::cout << frameCount / glfwGetTime() << std::endl;
-        }
     }
 
     return 0;
 }
-// void process_input(WindowContext& window) {
-//     if (window.get_key(GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-//         window.set_should_close(true);
-//     }
-// }

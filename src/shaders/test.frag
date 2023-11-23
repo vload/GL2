@@ -27,7 +27,6 @@ void main()
         color = vec3(1.0f);
     }
 
-
     float inside_circle = 1 - step(size, length(center - geometry_pos));
 
     FragColor = vec4(color, inside_circle);

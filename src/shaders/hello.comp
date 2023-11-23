@@ -26,9 +26,4 @@ void main() {
 
     out_balls[index].zw = balls[index].zw + acc * delta_t;
     out_balls[index].xy = balls[index].xy + balls[index].zw * delta_t + acc * delta_t * delta_t / 2;
-
-    // if (out_balls[index].x > 7.0f || out_balls[index].x < -7.0f)
-    //     out_balls[index].z *= -1;
-    // if (out_balls[index].y > 7.0f || out_balls[index].y < -7.0f) 
-    //     out_balls[index].w *= -1;
 }

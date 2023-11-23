@@ -60,16 +60,6 @@ class Program {
 
     void use() { glUseProgram(program); }
 
-    void set_uniform(std::string name, glm::vec4 v) {
-        int location = glGetUniformLocation(program, name.c_str());
-        glUniform4f(location, v.x, v.y, v.z, v.w);
-    }
-
-    void set_uniform(std::string name, glm::mat4 m) {
-        int location = glGetUniformLocation(program, name.c_str());
-        glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(m));
-    }
-
     void set_uniform(std::string name, int i) {
         int location = glGetUniformLocation(program, name.c_str());
         glUniform1i(location, i);
@@ -78,6 +68,21 @@ class Program {
     void set_uniform(std::string name, float f) {
         int location = glGetUniformLocation(program, name.c_str());
         glUniform1f(location, f);
+    }
+
+    void set_uniform(std::string name, glm::vec2 v) {
+        int location = glGetUniformLocation(program, name.c_str());
+        glUniform2f(location, v.x, v.y);
+    }
+
+    void set_uniform(std::string name, glm::vec4 v) {
+        int location = glGetUniformLocation(program, name.c_str());
+        glUniform4f(location, v.x, v.y, v.z, v.w);
+    }
+
+    void set_uniform(std::string name, glm::mat4 m) {
+        int location = glGetUniformLocation(program, name.c_str());
+        glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(m));
     }
 
     unsigned int get() { return program; }
