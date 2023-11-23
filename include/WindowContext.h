@@ -21,7 +21,7 @@ class WindowContext {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         // Create a GLFW window object
-        window = glfwCreateWindow(800, 800, "Hello", NULL, NULL);
+        window = glfwCreateWindow(1000, 1000, "Hello", NULL, NULL);
         if (window == NULL) {
             std::cout << "Failed to create GLFW window" << std::endl;
             glfwTerminate();
@@ -37,8 +37,13 @@ class WindowContext {
         }
 
         // Tell OpenGL the size of the rendering window
-        glViewport(0, 0, 800, 800);
+        glViewport(0, 0, 1000, 1000);
         glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    }
+
+    void set_framebuffer_size_callback(
+        GLFWframebuffersizefun callback) {
+        glfwSetFramebufferSizeCallback(window, callback);
     }
 
     ~WindowContext() { glfwTerminate(); }

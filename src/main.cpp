@@ -5,185 +5,180 @@
 #include "WindowContext.h"
 #include "util.h"
 
-#define SHOW_FPS
+constexpr int num_balls = 100000;
+constexpr float zoom = 10.0f;
+constexpr float ball_size = 0.002f;
 
-// define a function for random number generation from -1.0  to 1.0
-float random() { return (float)rand() / (float)RAND_MAX * 2.0f - 1.0f; }
+glm::mat4 projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
 
-void process_input(WindowContext& window) {
-    if (window.get_key(GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        window.set_should_close(true);
+void framebuffer_size_callback_ortho(GLFWwindow* window, int width,
+                                     int height) {
+    glViewport(0, 0, width, height);
+
+    // Adjust the orthographic projection matrix based on the new aspect ratio
+    float left = -1.0f;
+    float right = 1.0f;
+    float bottom = -1.0f;
+    float top = 1.0f;
+
+    // Calculate the new aspect ratio
+    float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+
+    // Adjust the orthographic projection matrix based on the new aspect ratio
+    if (aspectRatio >= 1.0f) {
+        // If the width is greater than or equal to the height
+        left *= aspectRatio;
+        right *= aspectRatio;
+    } else {
+        // If the height is greater than the width
+        bottom /= aspectRatio;
+        top /= aspectRatio;
+    }
+
+    // Recreate the orthographic projection matrix
+    projection = glm::ortho(left, right, bottom, top, -1.0f, 1.0f);
+}
+
+struct ball {
+    float x;
+    float y;
+    float vx;
+    float vy;
+} balls[num_balls];
+
+void generate_balls() {
+    // random lambda
+    auto random = []() -> float {
+        return (float)rand() / (float)RAND_MAX * 2.0f - 1.0f;
+    };
+
+    for (int i = 0; i < num_balls; i++) {
+        balls[i].x = random() * 10;
+        balls[i].y = random() * 10;
+        balls[i].vx = random();
+        balls[i].vy = random();
     }
 }
 
-float screenRectangleVertices[] = {
-    // Coords       // TexCoords
-    -1.0f, 1.0f,  0.0f, 1.0f,  // top left
-    -1.0f, -1.0f, 0.0f, 0.0f,  // bottom left
-    1.0f,  -1.0f, 1.0f, 0.0f,  // bottom right
-
-    -1.0f, 1.0f,  0.0f, 1.0f,  // top left
-    1.0f,  -1.0f, 1.0f, 0.0f,  // bottom right
-    1.0f,  1.0f,  1.0f, 1.0f  // top right
-};
-
 int main() {
     WindowContext window = WindowContext();
+    window.set_framebuffer_size_callback(framebuffer_size_callback_ortho);
 
     // Shader compilation
-    Shader vertexShader("shaders/hello.vert", GL_VERTEX_SHADER);
-    Shader fragmentShader("shaders/hello.frag", GL_FRAGMENT_SHADER);
-    Shader blueFragmentShader("shaders/blue.frag", GL_FRAGMENT_SHADER);
-
     Shader testVertexShader("shaders/test.vert", GL_VERTEX_SHADER);
     Shader testFragmentShader("shaders/test.frag", GL_FRAGMENT_SHADER);
     Shader geometryShader("shaders/test.geom", GL_GEOMETRY_SHADER);
 
-    Shader framebufferVertexShader("shaders/framebuffer.vert",
-                                   GL_VERTEX_SHADER);
-    Shader framebufferFragmentShader("shaders/framebuffer.frag",
-                                     GL_FRAGMENT_SHADER);
+    Shader computeShader("shaders/hello.comp", GL_COMPUTE_SHADER);
+
     // Program setup
-    Program program(vertexShader, fragmentShader);
-    Program blueProgram(vertexShader, blueFragmentShader);
     Program geometryProgram(testVertexShader, testFragmentShader,
                             geometryShader);
-    Program framebufferProgram(framebufferVertexShader,
-                               framebufferFragmentShader);
+    Program computeProgram(computeShader);
 
-    constexpr int num_balls = 20;
+    generate_balls();
 
-    struct ball {
-        float x;
-        float y;
-        float vx;
-        float vy;
-    } balls[num_balls];
+    unsigned int VAO;
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
 
-    for (int i = 0; i < num_balls; i++) {
-        balls[i].x = random();
-        balls[i].y = random();
-        balls[i].vx = random();
-        balls[i].vy = random();
-    }
+    unsigned int VBO;
+    glGenBuffers(1, &VBO);
 
-    // generate a vertex buffer object (VBO) and vertex array object (VAO)
-    enum VAO { BALLS, rectangle, numVAOs };
-    enum VBO { locations, velocities, rectangleBuf, numVBOs };
-
-    unsigned int VAOs[numVAOs];
-    glGenVertexArrays(numVAOs, VAOs);
-    unsigned int VBOs[numVBOs];
-    glGenBuffers(numVBOs, VBOs);
-
-    glBindVertexArray(VAOs[VAO::BALLS]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBOs[VBO::locations]);
+    // set up vertex buffer with ball data
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(balls), balls, GL_DYNAMIC_DRAW);
+
+    // postions
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(ball), (void*)0);
 
-    glBindVertexArray(VAOs[VAO::rectangle]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBOs[VBO::rectangleBuf]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(screenRectangleVertices),
-                 screenRectangleVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                          (void*)0);
+    // velocities
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                          (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(ball),
+                          (void*)(sizeof(float) * 2));
+
+    // set up compute shader buffers
+    enum SSBO { input, output, numSSBOs };
+    unsigned int SSBOs[numSSBOs];
+    glGenBuffers(numSSBOs, SSBOs);
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOs[SSBO::input]);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(balls), balls,
+                 GL_DYNAMIC_DRAW);
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOs[SSBO::output]);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(balls), nullptr,
+                 GL_DYNAMIC_DRAW);
 
     int frameCount = 0;
 
-    unsigned int FBO;
-    glGenFramebuffers(1, &FBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-
-    unsigned int texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window.get_width(),
-                 window.get_height(), 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                           texture, 0);
-
-    unsigned int RBO;
-    glGenRenderbuffers(1, &RBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, RBO);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
-                          window.get_width(), window.get_height());
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-                              GL_RENDERBUFFER, RBO);
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!"
-                  << std::endl;
-    }
-
     // Enable blending
     glEnable(GL_BLEND);
-    // Set the blend function
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     double old_time = glfwGetTime();
-    double delta_time;
+    double delta_time = 0.0f;
 
     while (!window.should_close()) {
         delta_time = glfwGetTime() - old_time;
         old_time = glfwGetTime();
         frameCount++;
-        process_input(window);
 
-        // render to texture (framebuffer) for post-processing
-        glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+        // process_input(window);
+
+        computeProgram.use();
+        // bind buffers
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, SSBOs[SSBO::input]);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, SSBOs[SSBO::output]);
+
+        // set delta time
+        computeProgram.set_uniform("delta_t", (float)delta_time);
+
+        glDispatchCompute(num_balls, 1, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+        // Copy the results from the GPU back to the CPU
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOs[SSBO::output]);
+        glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(balls), balls);
+
         // render
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.1f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glm::mat4 trans = glm::mat4(1.0f);
-        trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
+        glm::mat4 trans(1.0f);
+        trans = glm::scale(trans, glm::vec3(0.05, 0.05, 0.05));
 
         geometryProgram.use();
-        geometryProgram.set_uniform("transform", trans);
-        glBindVertexArray(VAOs[0]);
+        geometryProgram.set_uniform("projection", projection);
+        geometryProgram.set_uniform(
+            "zoom", glm::ortho(-zoom, zoom, -zoom, zoom, -1.0f, 1.0f));
+        geometryProgram.set_uniform("size", ball_size);
+        glBindVertexArray(VAO);
         glDrawArrays(GL_POINTS, 0, num_balls);
-
-
-        // render to screen
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        framebufferProgram.use();
-        framebufferProgram.set_uniform("screen_texture", 0);
-        glBindVertexArray(VAOs[VAO::rectangle]);
-        glDisable(GL_DEPTH_TEST);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // check and call events and swap the buffers
         window.swap_buffers();
         glfwPollEvents();
 
-        // move balls according to their velocities and time passed
-        for (int i = 0; i < num_balls; i++) {
-            balls[i].x += balls[i].vx * delta_time;
-            balls[i].y += balls[i].vy * delta_time;
-            if (balls[i].x > 1.0f || balls[i].x < -1.0f) balls[i].vx *= -1;
-            if (balls[i].y > 1.0f || balls[i].y < -1.0f) balls[i].vy *= -1;
-        }
-
-        glBindVertexArray(VAOs[0]);
-        glBindBuffer(GL_ARRAY_BUFFER, VBOs[VBO::locations]);
+        glBindVertexArray(VAO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(balls), balls, GL_DYNAMIC_DRAW);
 
-#ifdef SHOW_FPS
-        if (frameCount % 500 == 0) {
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOs[SSBO::input]);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(balls), balls,
+                     GL_DYNAMIC_DRAW);
+
+        if (frameCount % 100 == 0) {
             std::cout << frameCount / glfwGetTime() << std::endl;
         }
-#endif
     }
 
     return 0;
 }
+
+// void process_input(WindowContext& window) {
+//     if (window.get_key(GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+//         window.set_should_close(true);
+//     }
+// }
