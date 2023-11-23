@@ -7,7 +7,7 @@ set(GLFW ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/glfw-3.3.8)
 set(GLAD ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/glad)
 
 # Set the path to the GLM folder
-set(GLM ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/glm-0.9.9.8)
+set(GLM ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/glm)
 
 project(
     GL2
