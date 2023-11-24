@@ -5,10 +5,10 @@ in vec2 tex_coords;
 
 uniform sampler2D screen_texture;
 
-float rangle = 0.0;
-float gangle = radians(15.0);
-float bangle = radians(45.0);
-int circle_count = 80; // per 1 unit (1000 px)
+uniform float rangle = 0.0;
+uniform float gangle = radians(15.0);
+uniform float bangle = radians(45.0);
+uniform int circle_count = 80; // per 1 unit (1000 px)
 
 vec3 sampling(float angle){
     mat2 rotate = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
@@ -34,14 +34,14 @@ vec3 sampling(float angle){
         for(float j = center.y - radius; j < center.y + radius; j += 1.0 / 1000.0){
             color += texture(screen_texture, inverse_rotate * vec2(i, j));
             samples++;
-        }
+        }   
     }
 
     color = color / samples; // average color (simple but not efficient)
 
-    float inside_circler = 1.0 - step(color.r, dist * circle_count);
-    float inside_circleg = 1.0 - step(color.g, dist * circle_count);
-    float inside_circleb = 1.0 - step(color.b, dist * circle_count);
+    float inside_circler = 1.0 - step(color.r, dist * circle_count * 1.41);
+    float inside_circleg = 1.0 - step(color.g, dist * circle_count * 1.41);
+    float inside_circleb = 1.0 - step(color.b, dist * circle_count * 1.41);
 
     return vec3(inside_circler, inside_circleg, inside_circleb);
 }

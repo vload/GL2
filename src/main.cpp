@@ -5,6 +5,8 @@
 #include "WindowContext.h"
 #include "util.h"
 
+#define PI 3.14159265358979323846
+
 constexpr int num_balls = 1'000'000;
 float zoom = 10.0f;
 float ball_size = 0.002f;
@@ -73,6 +75,11 @@ void generate_balls() {
 }
 
 int main() {
+    float rangle = 0.0;
+    float gangle = glm::radians(15.0);
+    float bangle = glm::radians(45.0);
+    int circle_count = 80;  // per 1 unit (1000 px)
+
     WindowContext window = WindowContext();
     window.set_framebuffer_size_callback(framebuffer_size_callback_ortho);
 
@@ -201,6 +208,15 @@ int main() {
                            "world size = %.1f");
         ImGui::SliderFloat("time scale", &time_scale, 0.1f, 100.f,
                            "time scale = %.2f");
+
+        ImGui::SliderFloat("red angle", &rangle, 0.0f, 2 * PI,
+                           "red angle = %.2f");
+        ImGui::SliderFloat("green angle", &gangle, 0.0f, 2 * PI,
+                            "green angle = %.2f");
+        ImGui::SliderFloat("blue angle", &bangle, 0.0f, 2 * PI,
+                            "blue angle = %.2f");
+        ImGui::SliderInt("circle count", &circle_count, 1, 1000,
+                            "circle count = %d");
         if (ImGui::Button("Reset")) {
             generate_balls();
         }
@@ -250,6 +266,10 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT);
         framebufferProgram.use();
         framebufferProgram.set_uniform("screen_texture", 0);
+        framebufferProgram.set_uniform("rangle", rangle);
+        framebufferProgram.set_uniform("gangle", gangle);
+        framebufferProgram.set_uniform("bangle", bangle);
+        framebufferProgram.set_uniform("circle_count", circle_count);
         glBindVertexArray(rectVAO);
         glDisable(GL_DEPTH_TEST);
         glBindTexture(GL_TEXTURE_2D, texture);
